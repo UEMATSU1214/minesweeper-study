@@ -681,24 +681,36 @@ function finalSubmit(){
   if(!allAnswered){document.getElementById('submitWarn').style.display='';return;}
   document.getElementById('submitWarn').style.display='none';
   const now=new Date().toISOString();
-  boards.forEach(b=>{const ans=tempAnswers[b.id];if(!ans)return;responses.push({nickname,skillLevel,skillLabel:SKILL_LABELS[skillLevel],boardId:b.id,boardName:b.name,rows:b.rows,cols:b.cols,mines:b.mines.length,mineIndices:ans.mineIndices,openIndices:ans.openIndices||'',result:ans.result,time:ans.time,moves:ans.moves,rating:ans.rating,reason:ans.reason,ts:now});});
-  saveR();
-  fetch("https://script.google.com/macros/s/AKfycbxhp26ENsSmv5_ptL9MOR1qSdstWgG9CjelEUYTBIfvNMW006lcjSA_VVamxREtChim4g/exec", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    nickname: nickname,
-    skillLevel: skillLevel,
+  boards.forEach(b=>{const ans=tempAnswers[b.id];if(!ans)return;const response = {
+    nickname,
+    skillLevel,
     skillLabel: SKILL_LABELS[skillLevel],
-    responses: responses.filter(r => r.nickname === nickname)
-  })
+    boardId: b.id,
+    boardName: b.name,
+    rows: b.rows,
+    cols: b.cols,
+    mines: b.mines,
+    result: ans.result,
+    time: ans.time,
+    moves: ans.moves,
+    rating: ans.rating,
+    reason: ans.reason,
+    ts: new Date().toISOString()
+};
+
+responses.push(response);
+
+fetch("https://script.google.com/macros/s/AKfycbxhp26ENsSmv5_ptL9MOR1qSdstWgG9CjelEUYTBIfvNMW006lcjSA_VVamxREtChim4g/exec", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(response)
 })
 .then(res => res.json())
 .then(data => console.log(data))
-.catch(err => console.error(err));
-  submitted=true;pgGo('done');
+.catch(err => console.error(err));});
+  saveR();submitted=true;pgGo('done');
 }
 
 // ===== ADMIN =====
