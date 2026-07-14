@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マインスイーパー難易度実験</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --sur:#ffffff;--sur2:#f0f0ed;--bd:#e0e0db;--bd2:#c8c8c2;
+  --tx:#1a1a18;--tx2:#5a5a56;--tx3:#9a9a96;
+  --blue:#185FA5;--blue-bg:#e6f1fb;--blue-bd:#b5d4f4;
+  --green-bg:#eaf3de;--green-bd:#c0dd97;--green-tx:#3B6D11;
+  --red-bg:#fcebeb;--red-bd:#f7c1c1;--red-tx:#a32d2d;
+  --amber-bg:#faeeda;--amber-bd:#fac775;--amber-tx:#854F0B;
+  --r:8px;--rl:12px;
+}
+body{background:#f7f7f5;color:var(--tx);font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;font-size:14px;line-height:1.6;}
+#app{padding:1.25rem 1rem;max-width:720px;margin:0 auto;}
+.page{display:none;}.page.on{display:block;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:var(--r);border:0.5px solid var(--bd2);background:var(--sur);color:var(--tx);font-size:13px;cursor:pointer;font-family:inherit;}
+.btn:hover{background:var(--sur2);}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn-primary:hover{background:#144f8a;border-color:#144f8a;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-danger{background:var(--red-bg);border-color:var(--red-bd);color:var(--red-tx);}
+.ghost-btn{opacity:.35;font-size:11px;color:var(--tx3);border-color:transparent;background:transparent;}
+.ghost-btn:hover{opacity:.7;background:transparent;}
+.card{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1.25rem;}
+.chip{background:var(--sur2);border:0.5px solid var(--bd);border-radius:var(--r);padding:3px 10px;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;}
+.session-bar{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);padding:6px 12px;font-size:12px;color:var(--tx2);margin-bottom:1rem;display:flex;gap:12px;flex-wrap:wrap;}
+.session-bar b{color:var(--tx);}
+.progress-bar-wrap{background:var(--sur2);border-radius:4px;height:6px;margin-bottom:1rem;}
+.progress-bar{background:var(--blue);height:6px;border-radius:4px;transition:width .3s;}
+.board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:1rem;}
+.bcard{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:.875rem 1rem;cursor:pointer;transition:border-color .12s;}
+.bcard:hover{border-color:var(--blue-bd);background:var(--blue-bg);}
+.bcard.done{opacity:.6;cursor:not-allowed;border-style:dashed;pointer-events:none;}
+.game-hdr{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;}
+.result-bar{padding:8px 14px;border-radius:var(--r);font-size:13px;font-weight:500;display:none;align-items:center;gap:6px;margin-bottom:.75rem;}
+.result-bar.win{display:flex;background:var(--green-bg);border:0.5px solid var(--green-bd);color:var(--green-tx);}
+.result-bar.lose{display:flex;background:var(--red-bg);border:0.5px solid var(--red-bd);color:var(--red-tx);}
+.hint-txt{font-size:11px;color:var(--tx3);margin-bottom:.75rem;}
+.scale-row{display:flex;gap:8px;flex-wrap:wrap;margin:.75rem 0 .25rem;}
+.scb{width:52px;height:52px;border-radius:var(--r);border:1.5px solid var(--bd2);background:var(--sur2);font-size:16px;font-weight:500;cursor:pointer;color:var(--tx);transition:all .12s;font-family:inherit;}
+.scb:hover{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.scb.sel{border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:700;}
+.scale-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);margin-bottom:.75rem;}
+textarea.cmnt{width:100%;border:0.5px solid var(--bd2);border-radius:var(--r);padding:8px;font-size:13px;font-family:inherit;resize:vertical;background:var(--sur2);color:var(--tx);margin:.5rem 0 1rem;}
+.temp-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;}
+.temp-item{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);padding:.75rem 1rem;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;}
+.temp-item.no-answer{border-color:var(--amber-bd);}
+.skill-opt{display:flex;flex-direction:column;gap:8px;margin:.5rem 0 1rem;}
+.skill-btn{padding:11px 16px;border-radius:var(--r);border:1.5px solid var(--bd2);background:var(--sur);text-align:left;font-size:13px;cursor:pointer;color:var(--tx);transition:all .12s;font-family:inherit;}
+.skill-btn:hover{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.skill-btn.sel{border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:500;}
+.nav-tabs{display:flex;border-bottom:0.5px solid var(--bd);margin-bottom:1rem;}
+.ntab{padding:6px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--tx2);}
+.ntab.on{color:var(--blue);border-bottom-color:var(--blue);}
+.admin-sub{display:none;}.admin-sub.on{display:block;}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:.75rem;}
+.fg{display:flex;flex-direction:column;gap:3px;}
+.fg label{font-size:12px;color:var(--tx2);}
+.fg input,.fg select{padding:6px 9px;border:0.5px solid var(--bd2);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--sur);color:var(--tx);}
+.ed-mode-bar{display:flex;gap:6px;margin-bottom:.5rem;flex-wrap:wrap;align-items:center;}
+.mode-btn{padding:4px 10px;font-size:12px;border-radius:var(--r);border:0.5px solid var(--bd2);background:var(--sur2);cursor:pointer;color:var(--tx);font-family:inherit;}
+.mode-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:500;}
+.editor-grid{display:inline-grid;gap:2px;user-select:none;}
+.ed-cell{width:28px;height:28px;border-radius:3px;border:0.5px solid var(--bd2);background:var(--sur2);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;}
+.ed-cell.mine{background:var(--red-bg);border-color:var(--red-bd);}
+.ed-cell.open{background:var(--sur);border-color:var(--bd);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--bd);color:var(--tx2);font-weight:500;white-space:nowrap;}
+td{padding:6px 8px;border-bottom:0.5px solid var(--bd);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.mc{width:11px;height:11px;border-radius:1px;background:var(--sur2);border:0.5px solid var(--bd);}
+.mc.m{background:var(--red-bg);border-color:var(--red-bd);}
+.mc.o{background:var(--sur);border-color:var(--bd);}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;}
+.b-easy{background:var(--green-bg);color:var(--green-tx);}
+.b-med{background:var(--amber-bg);color:var(--amber-tx);}
+.b-hard{background:var(--red-bg);color:var(--red-tx);}
+.rule-box{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);padding:.875rem 1rem;margin-bottom:.75rem;}
+.rule-box h3{font-size:13px;font-weight:600;margin-bottom:.4rem;}
+.rule-box p,.rule-box li{font-size:13px;color:var(--tx2);line-height:1.7;}
+.rule-box ul{padding-left:1.2rem;}
+.op-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px;margin:.5rem 0;}
+.op-key{background:var(--sur2);border:0.5px solid var(--bd2);border-radius:4px;padding:2px 8px;font-weight:500;white-space:nowrap;text-align:center;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;}
+.modal-box{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1.25rem;width:100%;max-width:600px;margin:auto;}
+.modal-bg.hidden{display:none;}
+.pw-gate{text-align:center;padding:2rem 1rem;}
+.toast-box{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:8px 16px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast-box.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ENTRY -->
+<div id="pg-entry" class="page on">
+  <p style="font-size:16px;font-weight:500;margin-bottom:.2rem;">マインスイーパー難易度実験</p>
+  <p style="font-size:13px;color:var(--tx2);margin-bottom:1.25rem;">実験を始める前に、以下の情報を入力してください。</p>
+  <div class="card" style="max-width:440px;margin-bottom:1rem;">
+    <div class="fg" style="margin-bottom:1rem;">
+      <label>ニックネーム</label>
+      <input type="text" id="nicknameInput" placeholder="例: たろう" style="width:200px;">
+      <span style="font-size:11px;color:var(--tx3);margin-top:3px;">実験内で使用するニックネームを入力してください</span>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <p style="font-size:13px;font-weight:500;margin-bottom:.5rem;">マインスイーパーのプレイ経験を教えてください</p>
+      <div class="skill-opt">
+        <button class="skill-btn" onclick="selSkill(0,this)">ほとんど遊んだことがない</button>
+        <button class="skill-btn" onclick="selSkill(1,this)">数回〜たまに遊ぶ</button>
+        <button class="skill-btn" onclick="selSkill(2,this)">よく遊ぶ・定石を理解している</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="startSession()">実験を開始する</button>
+      <button class="btn" onclick="pgGo('tutorial')">📖 ルール・操作説明</button>
+      <span id="entryWarn" style="font-size:12px;color:var(--red-tx);display:none;">すべて入力・選択してください</span>
+    </div>
+  </div>
+  <button class="btn btn-sm ghost-btn" onclick="goAdmin()">管理</button>
+</div>
+
+<!-- TUTORIAL -->
+<div id="pg-tutorial" class="page">
+  <div style="margin-bottom:.75rem;"><button class="btn btn-sm" onclick="pgGo('entry')">← 戻る</button></div>
+  <p style="font-size:16px;font-weight:500;margin-bottom:1rem;">ルール・操作説明</p>
+  <div class="rule-box"><h3>🎯 ゲームの目的</h3><p>盤面のすべての「地雷でないマス」を開けるとクリアです。地雷のマスを開けてしまうとゲームオーバーになります。</p></div>
+  <div class="rule-box"><h3>🔢 数字の意味</h3><p>マスを開けると数字が表示されることがあります。その数字は、<b>周囲8マスの中に地雷がいくつあるか</b>を示しています。何も表示されないマスは周囲に地雷が1つもありません。</p></div>
+  <div class="rule-box"><h3>🖱 操作方法</h3>
+    <div class="op-grid">
+      <span class="op-key">左クリック</span><span>マスを開く</span>
+      <span class="op-key">右クリック</span><span>旗を立てる／外す（地雷の目印）</span>
+      <span class="op-key">スマホ長押し</span><span>旗を立てる／外す</span>
+      <span class="op-key">開いたマスをクリック</span><span>周囲の旗数が数字と一致していれば残りを一括開放（コードクリック）</span>
+    </div>
+  </div>
+  <div class="rule-box"><h3>🚩 旗について</h3><p>地雷だと思うマスに旗を立てておくと、誤って開けてしまうのを防げます。旗の数は残り地雷数のカウントに反映されます。</p></div>
+  <div class="rule-box"><h3>📋 実験の流れ</h3><ul>
+    <li>各盤面をプレイし、終了後に難易度を5段階で評価してください。</li>
+    <li>評価は一時保存されます。最後にまとめて送信してください。</li>
+    <li>送信前であれば評価を編集できます。</li>
+    <li>一度評価・送信した盤面は再プレイできません。</li>
+  </ul></div>
+  <p style="font-size:14px;font-weight:500;margin-bottom:.25rem;">🕹 お試しプレイ</p>
+  <p style="font-size:13px;color:var(--tx2);margin-bottom:.75rem;">下の盤面で何度でも練習できます。データには記録されません。</p>
+  <div class="game-hdr">
+    <span>残り地雷 <span class="chip" id="tr-mineLeft">0</span></span>
+    <span>時間 <span class="chip" id="tr-timerD">0.0s</span></span>
+  </div>
+  <div id="tr-resultBar" class="result-bar"></div>
+  <div id="tr-boardWrap" style="overflow-x:auto;margin-bottom:.5rem;"></div>
+  <p class="hint-txt">左クリック: 開く　右クリック / 長押し: 旗</p>
+  <button class="btn btn-sm" onclick="initTrial()">🔄 リセット</button>
+  <div style="margin-top:1.25rem;"><button class="btn btn-primary" onclick="pgGo('entry')">← 入力画面に戻る</button></div>
+</div>
+
+<!-- SELECT -->
+<div id="pg-select" class="page">
+  <div class="session-bar" id="sessionBar"></div>
+  <p style="font-size:15px;font-weight:500;margin-bottom:.2rem;">盤面を選択</p>
+  <p style="font-size:13px;color:var(--tx2);margin-bottom:.75rem;">プレイしたい盤面を選んでください。評価済みの盤面は再プレイできません。</p>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+  <div id="boardGrid" class="board-grid"></div>
+  <p id="noBoards" style="font-size:13px;color:var(--tx3);display:none;">管理ページから盤面を追加してください。</p>
+  <div id="submitWrap" style="display:none;margin-top:1rem;" class="card">
+    <p style="font-size:14px;font-weight:500;margin-bottom:.5rem;">回答の確認・まとめて送信</p>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:.75rem;">各盤面の評価を確認・編集できます。問題なければ送信してください。</p>
+    <div class="temp-list" id="tempList"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="finalSubmit()">まとめて送信</button>
+      <span id="submitWarn" style="font-size:12px;color:var(--red-tx);display:none;">未回答の盤面があります</span>
+    </div>
+  </div>
+  <div style="margin-top:.75rem;"><button class="btn btn-sm ghost-btn" onclick="goAdmin()">管理</button></div>
+</div>
+
+<!-- GAME -->
+<div id="pg-game" class="page">
+  <div style="margin-bottom:.75rem;"><button class="btn btn-sm" onclick="goSelect()">← 盤面選択に戻る</button></div>
+  <div class="session-bar" id="gameSessionBar"></div>
+  <div id="gTitle" style="font-size:15px;font-weight:500;margin-bottom:.2rem;"></div>
+  <div id="gDesc" style="font-size:12px;color:var(--tx2);margin-bottom:.75rem;"></div>
+  <div class="game-hdr">
+    <span>残り地雷 <span class="chip" id="mineLeft">0</span></span>
+    <span>時間 <span class="chip" id="timerD">0.0s</span></span>
+    <span>操作 <span class="chip" id="moveD">0</span></span>
+  </div>
+  <div id="resultBar" class="result-bar"></div>
+  <div id="boardWrap" style="overflow-x:auto;margin-bottom:.5rem;"></div>
+  <p class="hint-txt">左クリック: 開く　右クリック / 長押し: 旗</p>
+</div>
+
+<!-- SURVEY -->
+<div id="pg-survey" class="page">
+  <div style="margin-bottom:.75rem;"><button class="btn btn-sm" onclick="goSelect()">← 盤面選択に戻る（回答は一時保存されます）</button></div>
+  <div class="card">
+    <p style="font-size:15px;font-weight:500;margin-bottom:.25rem;">難易度アンケート</p>
+    <div id="svBoardName" style="font-size:13px;font-weight:500;margin-bottom:.5rem;color:var(--tx2);"></div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:.75rem;">回答は一時保存されます。送信前に編集できます。</p>
+    <p style="font-size:13px;font-weight:500;margin-bottom:.5rem;">ゲーム終了時の盤面</p>
+    <div id="svBoardWrap" style="overflow-x:auto;margin-bottom:1rem;padding-bottom:4px;"></div>
+    <p style="font-size:13px;font-weight:500;">この盤面はどのくらい難しかったですか？</p>
+    <div class="scale-row" id="scaleRow"></div>
+    <div class="scale-lbl"><span>1 とても簡単</span><span>5 とても難しい</span></div>
+    <p style="font-size:13px;font-weight:500;">難しいと感じた理由（任意）</p>
+    <textarea class="cmnt" id="reasonTxt" rows="2" placeholder="例：どこから開けばよいかわからなかった　など"></textarea>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn btn-primary" onclick="saveSurvey()">一時保存して戻る</button>
+      <span id="svWarn" style="font-size:12px;color:var(--red-tx);display:none;">難易度を選んでください</span>
+    </div>
+  </div>
+</div>
+
+<!-- DONE -->
+<div id="pg-done" class="page">
+  <div class="card" style="text-align:center;max-width:400px;margin:0 auto;">
+    <p style="font-size:36px;margin-bottom:.5rem;">✅</p>
+    <p style="font-size:16px;font-weight:500;margin:.5rem 0;">送信完了</p>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem;">ご協力ありがとうございました。</p>
+    <button class="btn btn-sm" onclick="resetAll()">最初に戻る</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="pg-admin" class="page">
+  <div style="margin-bottom:.75rem;"><button class="btn btn-sm" onclick="pgGo('entry')">← 戻る</button></div>
+  <div id="adminGate" class="pw-gate">
+    <p style="font-size:14px;font-weight:500;margin-bottom:.75rem;">管理者ページ</p>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <input type="password" id="pwIn" placeholder="パスワード" style="padding:6px 10px;font-size:13px;border:0.5px solid var(--bd2);border-radius:var(--r);background:var(--sur);color:var(--tx);" onkeydown="if(event.key==='Enter')checkPw()">
+      <button class="btn btn-primary" onclick="checkPw()">ログイン</button>
+    </div>
+    <p id="pwErr" style="font-size:12px;color:var(--red-tx);margin-top:.5rem;display:none;">パスワードが違います</p>
+  </div>
+  <div id="adminMain" style="display:none;">
+    <div class="nav-tabs">
+      <span class="ntab on" onclick="aTab('boards',this)">実験盤面</span>
+      <span class="ntab" onclick="aTab('trial',this)">お試し盤面</span>
+      <span class="ntab" onclick="aTab('results',this)">回答データ</span>
+    </div>
+
+    <!-- 実験盤面タブ -->
+    <div id="atab-boards" class="admin-sub on">
+      <div class="card" style="margin-bottom:1rem;">
+        <p style="font-size:14px;font-weight:500;margin-bottom:.75rem;" id="edFormTitle">新しい盤面を追加</p>
+        <div class="form-row">
+          <div class="fg"><label>盤面名</label><input type="text" id="edName" placeholder="例: 盤面A" style="width:120px;"></div>
+          <div class="fg"><label>難易度ラベル（管理用）</label><select id="edDiff"><option value="easy">易しい</option><option value="medium">普通</option><option value="hard">難しい</option></select></div>
+          <div class="fg"><label>説明（任意）</label><input type="text" id="edDesc" placeholder="被験者に表示" style="width:200px;"></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>行数</label><input type="number" id="edR" value="6" min="3" max="12" style="width:60px;" oninput="buildEd()"></div>
+          <div class="fg"><label>列数</label><input type="number" id="edC" value="6" min="3" max="12" style="width:60px;" oninput="buildEd()"></div>
+          <button class="btn btn-sm" onclick="clearEd()">全クリア</button>
+        </div>
+        <div class="ed-mode-bar">
+          <span style="font-size:12px;color:var(--tx2);">編集モード:</span>
+          <button class="mode-btn active" id="mode-mine" onclick="setMode('mine')">💣 地雷</button>
+          <button class="mode-btn" id="mode-open" onclick="setMode('open')">🔓 初期開放</button>
+          <button class="mode-btn" id="mode-erase" onclick="setMode('erase')">✕ 消す</button>
+        </div>
+        <p style="font-size:11px;color:var(--tx3);margin-bottom:.5rem;">地雷マスを初期開放に設定することはできません。数字は自動計算されます。</p>
+        <div style="overflow-x:auto;margin-bottom:.5rem;"><div id="edGrid" class="editor-grid"></div></div>
+        <p id="edCnt" style="font-size:12px;color:var(--tx2);margin-bottom:.75rem;"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="edSaveBtn" onclick="saveBoard()">盤面を保存</button>
+          <button class="btn" id="edCancelBtn" onclick="cancelEdit()" style="display:none;">キャンセル</button>
+        </div>
+      </div>
+      <p style="font-size:14px;font-weight:500;margin-bottom:.5rem;">登録済み盤面</p>
+      <div id="adminBoardList"></div>
+    </div>
+
+    <!-- お試し盤面タブ -->
+    <div id="atab-trial" class="admin-sub">
+      <div class="card" style="margin-bottom:1rem;">
+        <p style="font-size:14px;font-weight:500;margin-bottom:.5rem;">お試し盤面の編集</p>
+        <p style="font-size:13px;color:var(--tx2);margin-bottom:.75rem;">チュートリアルページで被験者が練習できる盤面です。データには記録されません。</p>
+        <div class="form-row">
+          <div class="fg"><label>行数</label><input type="number" id="trEdR" value="5" min="3" max="12" style="width:60px;" oninput="buildTrialEd()"></div>
+          <div class="fg"><label>列数</label><input type="number" id="trEdC" value="5" min="3" max="12" style="width:60px;" oninput="buildTrialEd()"></div>
+          <button class="btn btn-sm" onclick="clearTrialEd()">全クリア</button>
+        </div>
+        <div class="ed-mode-bar">
+          <span style="font-size:12px;color:var(--tx2);">編集モード:</span>
+          <button class="mode-btn active" id="trmode-mine" onclick="setTrialMode('mine')">💣 地雷</button>
+          <button class="mode-btn" id="trmode-open" onclick="setTrialMode('open')">🔓 初期開放</button>
+          <button class="mode-btn" id="trmode-erase" onclick="setTrialMode('erase')">✕ 消す</button>
+        </div>
+        <p style="font-size:11px;color:var(--tx3);margin-bottom:.5rem;">地雷マスを初期開放に設定することはできません。数字は自動計算されます。</p>
+        <div style="overflow-x:auto;margin-bottom:.5rem;"><div id="trEdGrid" class="editor-grid"></div></div>
+        <p id="trEdCnt" style="font-size:12px;color:var(--tx2);margin-bottom:.75rem;"></p>
+        <button class="btn btn-primary" onclick="saveTrialBoard()">お試し盤面を保存</button>
+      </div>
+      <p style="font-size:13px;font-weight:500;margin-bottom:.5rem;">現在のお試し盤面プレビュー</p>
+      <div id="trPreviewWrap" style="overflow-x:auto;margin-bottom:.5rem;"></div>
+    </div>
+
+    <!-- 回答データタブ -->
+    <div id="atab-results" class="admin-sub">
+      <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="renderResults()">🔄 更新</button>
+        <button class="btn btn-sm" onclick="exportCSV()">📥 CSVダウンロード</button>
+        <button class="btn btn-sm btn-danger" onclick="clearResults()">🗑 全削除</button>
+      </div>
+      <div id="resultTable"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg hidden" id="editModal">
+  <div class="modal-box">
+    <p style="font-size:14px;font-weight:500;margin-bottom:.75rem;">盤面を編集</p>
+    <div class="form-row">
+      <div class="fg"><label>盤面名</label><input type="text" id="mEdName" placeholder="例: 盤面A" style="width:120px;"></div>
+      <div class="fg"><label>難易度ラベル（管理用）</label><select id="mEdDiff"><option value="easy">易しい</option><option value="medium">普通</option><option value="hard">難しい</option></select></div>
+      <div class="fg"><label>説明（任意）</label><input type="text" id="mEdDesc" placeholder="被験者に表示" style="width:200px;"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>行数</label><input type="number" id="mEdR" value="6" min="3" max="12" style="width:60px;" oninput="buildModalEd()"></div>
+      <div class="fg"><label>列数</label><input type="number" id="mEdC" value="6" min="3" max="12" style="width:60px;" oninput="buildModalEd()"></div>
+      <button class="btn btn-sm" onclick="clearModalEd()">全クリア</button>
+    </div>
+    <div class="ed-mode-bar">
+      <span style="font-size:12px;color:var(--tx2);">編集モード:</span>
+      <button class="mode-btn active" id="mmode-mine" onclick="setModalMode('mine')">💣 地雷</button>
+      <button class="mode-btn" id="mmode-open" onclick="setModalMode('open')">🔓 初期開放</button>
+      <button class="mode-btn" id="mmode-erase" onclick="setModalMode('erase')">✕ 消す</button>
+    </div>
+    <p style="font-size:11px;color:var(--tx3);margin-bottom:.5rem;">地雷マスを初期開放に設定することはできません。</p>
+    <div style="overflow-x:auto;margin-bottom:.5rem;"><div id="mEdGrid" class="editor-grid"></div></div>
+    <p id="mEdCnt" style="font-size:12px;color:var(--tx2);margin-bottom:.75rem;"></p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="saveModalBoard()">保存</button>
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-box" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const ADMIN_PW = 'study2025'; // ← ここを変更してください
+const SKILL_LABELS = ['ほとんど遊んだことがない', '数回〜たまに遊ぶ', 'よく遊ぶ・定石を理解している'];
+const NUM_C = ['','#185FA5','#3B6D11','#a32d2d','#26215C','#854F0B','#0F6E56','#501313','#888'];
+const CELL = 34, GAP = 2;
+const DEFAULT_TRIAL = {rows:5, cols:5, mines:[2,7,17,22], opens:[10,11,15]};
+
+// ===== STATE =====
+let boards = [], responses = [], trialBoard = null;
+let nickname = '', skillLevel = -1, tempAnswers = {}, submitted = false;
+let curBoard = null, gBoard = null, rev = null, flg = null;
+let gState = 'playing', tInt = null, t0 = null, moves = 0, gResult = null, gTime = 0, selRating = null;
+let edMines = new Set(), edOpen = new Set(), edMode = 'mine', edRows = 6, edCols = 6;
+let mEdMines = new Set(), mEdOpen = new Set(), mEdMode = 'mine', mEditingId = null;
+let trEdMines = new Set(), trEdOpen = new Set(), trEdMode = 'mine';
+let trGBoard = null, trRev = null, trFlg = null, trTInt = null, trT0 = null, trGState = 'playing';
+
+// ===== STORAGE =====
+function load() {
+  try { boards = JSON.parse(localStorage.getItem('ms7_boards') || '[]'); } catch(e) { boards = []; }
+  try { responses = JSON.parse(localStorage.getItem('ms7_resp') || '[]'); } catch(e) { responses = []; }
+  try { trialBoard = JSON.parse(localStorage.getItem('ms7_trial') || 'null'); } catch(e) { trialBoard = null; }
+  if (!trialBoard) trialBoard = {...DEFAULT_TRIAL};
+  if (boards.length === 0) addSamples();
+}
+function saveB() { localStorage.setItem('ms7_boards', JSON.stringify(boards)); }
+function saveR() { localStorage.setItem('ms7_resp', JSON.stringify(responses)); }
+function saveTrial() { localStorage.setItem('ms7_trial', JSON.stringify(trialBoard)); }
+
+function addSamples() {
+  boards = [
+    {id:1,name:'盤面01',diff:'easy',desc:'',rows:5,cols:5,mines:[2,8,18],opens:[20,21,22,23,24]},
+    {id:2,name:'盤面02',diff:'medium',desc:'',rows:6,cols:6,mines:[0,5,14,21,30,35],opens:[8,9,10]},
+    {id:3,name:'盤面03',diff:'hard',desc:'',rows:7,cols:7,mines:[0,6,8,14,20,24,30,34,40,48],opens:[45,46,47]},
+  ];
+  saveB();
+}
+
+// ===== NAVIGATION =====
+function pgGo(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById('pg-' + id).classList.add('on');
+  if (id === 'tutorial') initTrial();
+}
+function goSelect() { clearInterval(tInt); pgGo('select'); renderSelect(); }
+function goAdmin() { pgGo('admin'); }
+
+// ===== ENTRY =====
+function selSkill(idx, el) {
+  skillLevel = idx;
+  document.querySelectorAll('.skill-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function startSession() {
+  const nm = document.getElementById('nicknameInput').value.trim();
+  if (!nm || skillLevel < 0) { document.getElementById('entryWarn').style.display = ''; return; }
+  nickname = nm; tempAnswers = {}; submitted = false;
+  pgGo('select'); renderSelect();
+}
+function resetAll() {
+  nickname = ''; skillLevel = -1; tempAnswers = {}; submitted = false;
+  document.getElementById('nicknameInput').value = '';
+  document.querySelectorAll('.skill-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('entryWarn').style.display = 'none';
+  pgGo('entry');
+}
+
+// ===== SESSION BAR =====
+function updSessionBar(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = `<span>ニックネーム: <b>${x(nickname)}</b></span><span>熟練度: <b>${SKILL_LABELS[skillLevel] || '-'}</b></span>`;
+}
+
+// ===== CALC =====
+function calcNumbers(gB, R, C) {
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    if (gB[r][c] === -1) continue; let n = 0;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const nr = r+dr, nc = c+dc;
+      if (nr >= 0 && nr < R && nc >= 0 && nc < C && gB[nr][nc] === -1) n++;
+    }
+    gB[r][c] = n;
+  }
+}
+function floodReveal(r, c, brd, rv, fg, R, C) {
+  if (r < 0 || r >= R || c < 0 || c >= C || rv[r][c] || fg[r][c] || brd[r][c] === -1) return;
+  rv[r][c] = true;
+  if (brd[r][c] === 0) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) floodReveal(r+dr, c+dc, brd, rv, fg, R, C);
+}
+
+// ===== SVG DRAW =====
+function drawBoardTo(container, R, C, revArr, flgArr, boardArr, interactive, mode) {
+  const W = C*(CELL+GAP)-GAP, H = R*(CELL+GAP)-GAP;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.style.display = 'block';
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    const px = c*(CELL+GAP), py = r*(CELL+GAP);
+    const isRev = revArr[r][c], isFlg = flgArr[r][c], val = boardArr[r][c];
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', px); rect.setAttribute('y', py);
+    rect.setAttribute('width', CELL); rect.setAttribute('height', CELL);
+    rect.setAttribute('rx', 3); rect.setAttribute('stroke-width', '0.5');
+    if (isRev) {
+      if (val === -1) { rect.setAttribute('fill', '#fcebeb'); rect.setAttribute('stroke', '#f7c1c1'); }
+      else { rect.setAttribute('fill', '#ffffff'); rect.setAttribute('stroke', '#e0e0db'); }
+    } else if (isFlg) {
+      rect.setAttribute('fill', '#faeeda'); rect.setAttribute('stroke', '#fac775');
+    } else {
+      rect.setAttribute('fill', '#f0f0ed'); rect.setAttribute('stroke', '#c8c8c2');
+    }
+    svg.appendChild(rect);
+    if (isRev && val === -1) svg.appendChild(mkT(px+CELL/2, py+CELL/2+5, '💣', 16));
+    else if (isRev && val > 0) { const t = mkT(px+CELL/2, py+CELL/2+5, val, 14, NUM_C[val]); t.setAttribute('font-weight', '700'); svg.appendChild(t); }
+    else if (isFlg) svg.appendChild(mkT(px+CELL/2, py+CELL/2+5, '🚩', 15));
+    if (interactive) {
+      const isDone = mode === 'trial' ? trGState === 'done' : gState === 'done';
+      if (!isDone) {
+        const ov = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        ov.setAttribute('x', px); ov.setAttribute('y', py);
+        ov.setAttribute('width', CELL); ov.setAttribute('height', CELL);
+        ov.setAttribute('rx', 3); ov.setAttribute('fill', 'transparent'); ov.style.cursor = 'pointer';
+        const rr = r, cc = c;
+        if (mode === 'trial') {
+          ov.addEventListener('click', () => handleTrialCell(rr, cc));
+          ov.addEventListener('contextmenu', e => { e.preventDefault(); handleTrialFlag(rr, cc); });
+          let lt; ov.addEventListener('touchstart', () => { lt = setTimeout(() => handleTrialFlag(rr, cc), 500); }, {passive:true});
+          ov.addEventListener('touchend', () => clearTimeout(lt), {passive:true});
+        } else {
+          ov.addEventListener('click', () => handleCell(rr, cc));
+          ov.addEventListener('contextmenu', e => { e.preventDefault(); handleFlag(rr, cc); });
+          let lt; ov.addEventListener('touchstart', () => { lt = setTimeout(() => handleFlag(rr, cc), 500); }, {passive:true});
+          ov.addEventListener('touchend', () => clearTimeout(lt), {passive:true});
+        }
+        svg.appendChild(ov);
+      }
+    }
+  }
+  container.innerHTML = ''; container.appendChild(svg);
+}
+function mkT(x, y, txt, sz, fill = '#1a1a18') {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', x); t.setAttribute('y', y); t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('font-size', sz); t.setAttribute('fill', fill); t.textContent = txt; return t;
+}
+
+// ===== TRIAL GAME =====
+function initTrial() {
+  clearInterval(trTInt); trGState = 'playing'; trT0 = performance.now();
+  const b = trialBoard, R = b.rows, C = b.cols;
+  trGBoard = Array.from({length:R}, (_,r) => Array.from({length:C}, (_,c) => b.mines.includes(r*C+c) ? -1 : 0));
+  calcNumbers(trGBoard, R, C);
+  trRev = Array.from({length:R}, () => Array(C).fill(false));
+  trFlg = Array.from({length:R}, () => Array(C).fill(false));
+  (b.opens || []).forEach(idx => { const r = Math.floor(idx/C), c = idx%C; if (trGBoard[r] && trGBoard[r][c] !== -1) floodReveal(r, c, trGBoard, trRev, trFlg, R, C); });
+  document.getElementById('tr-resultBar').className = 'result-bar';
+  trTInt = setInterval(() => { if (trGState === 'playing') document.getElementById('tr-timerD').textContent = ((performance.now()-trT0)/1000).toFixed(1) + 's'; }, 100);
+  drawTrialBoard();
+}
+function drawTrialBoard() {
+  let f = 0; for (let r = 0; r < trialBoard.rows; r++) for (let c = 0; c < trialBoard.cols; c++) if (trFlg[r][c]) f++;
+  document.getElementById('tr-mineLeft').textContent = trialBoard.mines.length - f;
+  drawBoardTo(document.getElementById('tr-boardWrap'), trialBoard.rows, trialBoard.cols, trRev, trFlg, trGBoard, true, 'trial');
+}
+function handleTrialCell(r, c) {
+  if (trGState === 'done' || trFlg[r][c]) return;
+  if (trRev[r][c]) { trChord(r, c); return; }
+  if (trGBoard[r][c] === -1) { trRev[r][c] = true; endTrial('lose'); return; }
+  floodReveal(r, c, trGBoard, trRev, trFlg, trialBoard.rows, trialBoard.cols);
+  drawTrialBoard(); trCheckWin();
+}
+function handleTrialFlag(r, c) { if (trGState === 'done' || trRev[r][c]) return; trFlg[r][c] = !trFlg[r][c]; drawTrialBoard(); }
+function trChord(r, c) {
+  if (!trRev[r][c] || trGBoard[r][c] <= 0) return;
+  let f = 0;
+  for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) { const nr=r+dr,nc=c+dc; if(nr>=0&&nr<trialBoard.rows&&nc>=0&&nc<trialBoard.cols&&trFlg[nr][nc]) f++; }
+  if (f !== trGBoard[r][c]) return;
+  let hit = false;
+  for (let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) {
+    const nr=r+dr,nc=c+dc;
+    if(nr>=0&&nr<trialBoard.rows&&nc>=0&&nc<trialBoard.cols&&!trFlg[nr][nc]&&!trRev[nr][nc]) {
+      if(trGBoard[nr][nc]===-1) hit=true;
+      floodReveal(nr, nc, trGBoard, trRev, trFlg, trialBoard.rows, trialBoard.cols);
+    }
+  }
+  drawTrialBoard(); if(hit) endTrial('lose'); else trCheckWin();
+}
+function trCheckWin() {
+  let s = 0; for(let r=0;r<trialBoard.rows;r++) for(let c=0;c<trialBoard.cols;c++) if(trGBoard[r][c]!==-1&&trRev[r][c]) s++;
+  if(s===trialBoard.rows*trialBoard.cols-trialBoard.mines.length) endTrial('win');
+}
+function endTrial(result) {
+  trGState = 'done'; clearInterval(trTInt);
+  if(result==='lose') for(let r=0;r<trialBoard.rows;r++) for(let c=0;c<trialBoard.cols;c++) if(trGBoard[r][c]===-1) trRev[r][c]=true;
+  drawTrialBoard();
+  const bar = document.getElementById('tr-resultBar');
+  if(result==='win'){bar.className='result-bar win';bar.textContent='🎉 クリア！　「リセット」でもう一度遊べます';}
+  else{bar.className='result-bar lose';bar.textContent='💥 地雷を踏みました　「リセット」でもう一度遊べます';}
+}
+
+// ===== MAIN GAME =====
+function renderSelect() {
+  updSessionBar('sessionBar');
+  const g = document.getElementById('boardGrid'); g.innerHTML = '';
+  if(boards.length===0){document.getElementById('noBoards').style.display='';return;}
+  document.getElementById('noBoards').style.display='none';
+  const answered = boards.filter(b=>tempAnswers[b.id]&&tempAnswers[b.id].rating!=null).length;
+  document.getElementById('progressBar').style.width=(boards.length>0?Math.round(answered/boards.length*100):0)+'%';
+  boards.forEach(b=>{
+    const ans=tempAnswers[b.id],isDone=ans&&ans.rating!=null;
+    const d=document.createElement('div'); d.className='bcard'+(isDone?' done':'');
+    d.innerHTML=`<div style="font-size:11px;color:var(--tx3);margin-bottom:3px;">No.${b.id}</div>
+<div style="font-size:14px;font-weight:500;margin-bottom:3px;">${x(b.name)}</div>
+<div style="font-size:12px;color:var(--tx2);">${b.rows}×${b.cols}　地雷 ${b.mines.length}個</div>
+${b.desc?`<div style="font-size:11px;color:var(--tx3);margin-top:4px;">${x(b.desc)}</div>`:''}
+${isDone?`<div style="font-size:11px;color:var(--green-tx);margin-top:6px;">🔒 評価済み（${ans.rating}/5）</div>`:`<div style="font-size:11px;color:var(--tx3);margin-top:6px;">未プレイ</div>`}`;
+    if(!isDone) d.onclick=()=>startGame(b);
+    g.appendChild(d);
+  });
+  const anyAnswered=boards.some(b=>tempAnswers[b.id]&&tempAnswers[b.id].rating!=null);
+  document.getElementById('submitWrap').style.display=anyAnswered&&!submitted?'':'none';
+  if(anyAnswered&&!submitted) renderTempList();
+}
+function renderTempList() {
+  const el=document.getElementById('tempList'); el.innerHTML='';
+  boards.forEach(b=>{
+    const ans=tempAnswers[b.id]; if(!ans) return;
+    const hasRating=ans.rating!=null;
+    const d=document.createElement('div'); d.className='temp-item'+(hasRating?'':' no-answer');
+    d.innerHTML=`<div style="flex:0 0 auto;"><div style="font-size:12px;font-weight:500;">${x(b.name)}</div><div style="font-size:11px;color:var(--tx3);">${b.rows}×${b.cols}</div></div>
+<div style="flex:1;min-width:0;">${hasRating?`<span style="font-size:13px;font-weight:500;">評価: ${ans.rating}/5</span>${ans.reason?`<span style="font-size:12px;color:var(--tx2);margin-left:8px;">${x(ans.reason.substring(0,30)+(ans.reason.length>30?'…':''))}</span>`:''}` :`<span style="font-size:12px;color:var(--amber-tx);">未評価</span>`}</div>
+<button class="btn btn-sm" onclick="editAnswer(${b.id})" ${submitted?'disabled':''}>編集</button>`;
+    el.appendChild(d);
+  });
+}
+function editAnswer(boardId) {
+  const b=boards.find(bb=>bb.id===boardId); if(!b||submitted) return;
+  const ans=tempAnswers[b.id]||{};
+  curBoard=b;
+  const R=b.rows,C=b.cols;
+  gBoard=Array.from({length:R},(_,r)=>Array.from({length:C},(_,c)=>b.mines.includes(r*C+c)?-1:0));
+  calcNumbers(gBoard,R,C);
+  showSurveyUI(b,ans.rating,ans.reason,ans.revSnapshot,ans.flgSnapshot);
+}
+function startGame(b) {
+  curBoard=b; moves=0; gResult=null; gTime=0; t0=null;
+  clearInterval(tInt);
+  const R=b.rows,C=b.cols;
+  gBoard=Array.from({length:R},(_,r)=>Array.from({length:C},(_,c)=>b.mines.includes(r*C+c)?-1:0));
+  calcNumbers(gBoard,R,C);
+  rev=Array.from({length:R},()=>Array(C).fill(false));
+  flg=Array.from({length:R},()=>Array(C).fill(false));
+  (b.opens||[]).forEach(idx=>{const r=Math.floor(idx/C),c=idx%C;if(r>=0&&r<R&&c>=0&&c<C&&gBoard[r][c]!==-1)floodReveal(r,c,gBoard,rev,flg,R,C);});
+  gState='playing'; t0=performance.now();
+  tInt=setInterval(()=>{if(gState==='playing')document.getElementById('timerD').textContent=((performance.now()-t0)/1000).toFixed(1)+'s';},100);
+  pgGo('game'); updSessionBar('gameSessionBar');
+  document.getElementById('gTitle').textContent=b.name;
+  document.getElementById('gDesc').textContent=b.desc||'';
+  document.getElementById('resultBar').className='result-bar';
+  document.getElementById('timerD').textContent='0.0s';
+  document.getElementById('moveD').textContent='0';
+  updStats(); drawBoard();
+}
+function updStats() {
+  let f=0; if(flg) for(let r=0;r<curBoard.rows;r++) for(let c=0;c<curBoard.cols;c++) if(flg[r][c]) f++;
+  document.getElementById('mineLeft').textContent=curBoard.mines.length-f;
+  document.getElementById('moveD').textContent=moves;
+}
+function drawBoard(){drawBoardTo(document.getElementById('boardWrap'),curBoard.rows,curBoard.cols,rev,flg,gBoard,true,'main');}
+function handleCell(r,c){
+  if(gState==='done'||flg[r][c])return;
+  if(rev[r][c]){chord(r,c);return;}
+  moves++;
+  if(gBoard[r][c]===-1){rev[r][c]=true;endGame('lose');return;}
+  floodReveal(r,c,gBoard,rev,flg,curBoard.rows,curBoard.cols);
+  updStats();drawBoard();checkWin();
+}
+function handleFlag(r,c){if(gState==='done'||rev[r][c])return;flg[r][c]=!flg[r][c];moves++;updStats();drawBoard();}
+function chord(r,c){
+  if(!rev[r][c]||gBoard[r][c]<=0)return;
+  let f=0;
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<curBoard.rows&&nc>=0&&nc<curBoard.cols&&flg[nr][nc])f++;}
+  if(f!==gBoard[r][c])return;
+  let hit=false;
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+    const nr=r+dr,nc=c+dc;
+    if(nr>=0&&nr<curBoard.rows&&nc>=0&&nc<curBoard.cols&&!flg[nr][nc]&&!rev[nr][nc]){
+      if(gBoard[nr][nc]===-1)hit=true;
+      floodReveal(nr,nc,gBoard,rev,flg,curBoard.rows,curBoard.cols);
+    }
+  }
+  moves++;updStats();drawBoard();if(hit)endGame('lose');else checkWin();
+}
+function checkWin(){
+  let s=0;const R=curBoard.rows,C=curBoard.cols;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(gBoard[r][c]!==-1&&rev[r][c])s++;
+  if(s===R*C-curBoard.mines.length)endGame('win');
+}
+function endGame(result){
+  gState='done';clearInterval(tInt);
+  gTime=t0?((performance.now()-t0)/1000):0;gResult=result;
+  document.getElementById('timerD').textContent=gTime.toFixed(1)+'s';
+  const R=curBoard.rows,C=curBoard.cols;
+  if(result==='lose')for(let r=0;r<R;r++)for(let c=0;c<C;c++)if(gBoard[r][c]===-1)rev[r][c]=true;
+  drawBoard();
+  const bar=document.getElementById('resultBar');
+  if(result==='win'){bar.className='result-bar win';bar.textContent='🎉 クリア！';}
+  else{bar.className='result-bar lose';bar.textContent='💥 地雷を踏みました';}
+  const snap={result,time:+gTime.toFixed(2),moves,revSnapshot:JSON.parse(JSON.stringify(rev)),flgSnapshot:JSON.parse(JSON.stringify(flg))};
+  if(!tempAnswers[curBoard.id]){tempAnswers[curBoard.id]={boardId:curBoard.id,boardName:curBoard.name,rows:curBoard.rows,cols:curBoard.cols,mines:curBoard.mines.length,mineIndices:curBoard.mines.join(';'),openIndices:(curBoard.opens||[]).join(';'),rating:null,reason:'',...snap};}
+  else{Object.assign(tempAnswers[curBoard.id],snap);}
+  setTimeout(()=>showSurveyUI(curBoard,tempAnswers[curBoard.id].rating,tempAnswers[curBoard.id].reason,tempAnswers[curBoard.id].revSnapshot,tempAnswers[curBoard.id].flgSnapshot),700);
+}
+function showSurveyUI(b,curRating,curReason,revSnap,flgSnap){
+  pgGo('survey');selRating=curRating||null;
+  document.getElementById('svBoardName').textContent=b.name+`（${b.rows}×${b.cols}、地雷${b.mines.length}個）`;
+  document.getElementById('reasonTxt').value=curReason||'';
+  document.getElementById('svWarn').style.display='none';
+  if(revSnap&&flgSnap&&gBoard)drawBoardTo(document.getElementById('svBoardWrap'),b.rows,b.cols,revSnap,flgSnap,gBoard,false,'view');
+  else document.getElementById('svBoardWrap').innerHTML='<p style="font-size:12px;color:var(--tx3);">盤面データがありません</p>';
+  const row=document.getElementById('scaleRow');row.innerHTML='';
+  for(let i=1;i<=5;i++){const btn=document.createElement('button');btn.className='scb'+(selRating===i?' sel':'');btn.textContent=i;btn.onclick=()=>{document.querySelectorAll('.scb').forEach(e=>e.classList.remove('sel'));btn.classList.add('sel');selRating=i;document.getElementById('svWarn').style.display='none';};row.appendChild(btn);}
+}
+function saveSurvey(){
+  if(!selRating){document.getElementById('svWarn').style.display='';return;}
+  if(!tempAnswers[curBoard.id])tempAnswers[curBoard.id]={boardId:curBoard.id,boardName:curBoard.name,rows:curBoard.rows,cols:curBoard.cols,mines:curBoard.mines.length,mineIndices:curBoard.mines.join(';'),openIndices:(curBoard.opens||[]).join(';'),result:'unknown',time:0,moves:0,revSnapshot:null,flgSnapshot:null};
+  tempAnswers[curBoard.id].rating=selRating;
+  tempAnswers[curBoard.id].reason=document.getElementById('reasonTxt').value.trim();
+  toast('一時保存しました');goSelect();
+}
+function finalSubmit(){
+  const allAnswered=boards.every(b=>tempAnswers[b.id]&&tempAnswers[b.id].rating!=null);
+  if(!allAnswered){document.getElementById('submitWarn').style.display='';return;}
+  document.getElementById('submitWarn').style.display='none';
+  const now=new Date().toISOString();
+  boards.forEach(b=>{const ans=tempAnswers[b.id];if(!ans)return;responses.push({nickname,skillLevel,skillLabel:SKILL_LABELS[skillLevel],boardId:b.id,boardName:b.name,rows:b.rows,cols:b.cols,mines:b.mines.length,mineIndices:ans.mineIndices,openIndices:ans.openIndices||'',result:ans.result,time:ans.time,moves:ans.moves,rating:ans.rating,reason:ans.reason,ts:now});});
+  saveR();
+  fetch("https://script.google.com/macros/s/AKfycbxhp26ENsSmv5_ptL9MOR1qSdstWgG9CjelEUYTBIfvNMW006lcjSA_VVamxREtChim4g/exec", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    nickname: nickname,
+    skillLevel: skillLevel,
+    skillLabel: SKILL_LABELS[skillLevel],
+    responses: responses.filter(r => r.nickname === nickname)
+  })
+})
+.then(res => res.json())
+.then(data => console.log(data))
+.catch(err => console.error(err));
+  submitted=true;pgGo('done');
+}
+
+// ===== ADMIN =====
+function checkPw(){
+  if(document.getElementById('pwIn').value===ADMIN_PW){
+    document.getElementById('adminGate').style.display='none';
+    document.getElementById('adminMain').style.display='';
+    buildEd();renderAdminBoards();buildTrialEd();renderTrialPreview();
+  }else{document.getElementById('pwErr').style.display='';}
+}
+function aTab(name,el){
+  document.querySelectorAll('.admin-sub').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(e=>e.classList.remove('on'));
+  document.getElementById('atab-'+name).classList.add('on');el.classList.add('on');
+  if(name==='results')renderResults();
+  if(name==='trial'){buildTrialEd();renderTrialPreview();}
+}
+function setMode(m){edMode=m;document.querySelectorAll('#atab-boards .mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('mode-'+m).classList.add('active');}
+function buildEd(){
+  edRows=parseInt(document.getElementById('edR').value)||6;edCols=parseInt(document.getElementById('edC').value)||6;
+  edMines=new Set([...edMines].filter(i=>Math.floor(i/edCols)<edRows&&i%edCols<edCols));
+  edOpen=new Set([...edOpen].filter(i=>Math.floor(i/edCols)<edRows&&i%edCols<edCols&&!edMines.has(i)));
+  const tmpB=Array.from({length:edRows},(_,r)=>Array.from({length:edCols},(_,c)=>edMines.has(r*edCols+c)?-1:0));
+  calcNumbers(tmpB,edRows,edCols);
+  const g=document.getElementById('edGrid');g.style.gridTemplateColumns=`repeat(${edCols},28px)`;g.innerHTML='';
+  for(let r=0;r<edRows;r++)for(let c=0;c<edCols;c++){
+    const idx=r*edCols+c,isMine=edMines.has(idx),isOpen=edOpen.has(idx);
+    const d=document.createElement('div');d.className='ed-cell'+(isMine?' mine':isOpen?' open':'');
+    if(isMine)d.textContent='💣';else if(isOpen){const v=tmpB[r][c];d.innerHTML=v>0?`<span style="font-size:11px;font-weight:700;color:${NUM_C[v]}">${v}</span>`:'';}
+    d.onclick=()=>{if(edMode==='mine'){if(isOpen)return;if(isMine)edMines.delete(idx);else{edMines.add(idx);edOpen.delete(idx);}}else if(edMode==='open'){if(isMine)return;if(isOpen)edOpen.delete(idx);else edOpen.add(idx);}else{edMines.delete(idx);edOpen.delete(idx);}buildEd();};
+    g.appendChild(d);
+  }
+  document.getElementById('edCnt').textContent=`地雷: ${edMines.size}個　初期開放: ${edOpen.size}マス`;
+}
+function clearEd(){edMines=new Set();edOpen=new Set();buildEd();}
+function cancelEdit(){document.getElementById('edFormTitle').textContent='新しい盤面を追加';document.getElementById('edSaveBtn').textContent='盤面を保存';document.getElementById('edCancelBtn').style.display='none';document.getElementById('edName').value='';document.getElementById('edDesc').value='';edMines=new Set();edOpen=new Set();buildEd();}
+function saveBoard(){
+  const nm=document.getElementById('edName').value.trim();if(!nm){toast('盤面名を入力してください');return;}if(edMines.size===0){toast('地雷を1個以上配置してください');return;}
+  const maxId=boards.reduce((m,b)=>Math.max(m,b.id||0),0);
+  boards.push({id:maxId+1,name:nm,diff:document.getElementById('edDiff').value,desc:document.getElementById('edDesc').value.trim(),rows:edRows,cols:edCols,mines:[...edMines].sort((a,b)=>a-b),opens:[...edOpen].sort((a,b)=>a-b)});
+  saveB();toast(`「${nm}」を保存しました`);cancelEdit();renderAdminBoards();
+}
+function setModalMode(m){mEdMode=m;document.querySelectorAll('#editModal .mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('mmode-'+m).classList.add('active');}
+function buildModalEd(){
+  const R=parseInt(document.getElementById('mEdR').value)||6,C=parseInt(document.getElementById('mEdC').value)||6;
+  mEdMines=new Set([...mEdMines].filter(i=>Math.floor(i/C)<R&&i%C<C));
+  mEdOpen=new Set([...mEdOpen].filter(i=>Math.floor(i/C)<R&&i%C<C&&!mEdMines.has(i)));
+  const tmpB=Array.from({length:R},(_,r)=>Array.from({length:C},(_,c)=>mEdMines.has(r*C+c)?-1:0));
+  calcNumbers(tmpB,R,C);
+  const g=document.getElementById('mEdGrid');g.style.gridTemplateColumns=`repeat(${C},28px)`;g.innerHTML='';
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const idx=r*C+c,isMine=mEdMines.has(idx),isOpen=mEdOpen.has(idx);
+    const d=document.createElement('div');d.className='ed-cell'+(isMine?' mine':isOpen?' open':'');
+    if(isMine)d.textContent='💣';else if(isOpen){const v=tmpB[r][c];d.innerHTML=v>0?`<span style="font-size:11px;font-weight:700;color:${NUM_C[v]}">${v}</span>`:'';}
+    d.onclick=()=>{if(mEdMode==='mine'){if(isOpen)return;if(isMine)mEdMines.delete(idx);else{mEdMines.add(idx);mEdOpen.delete(idx);}}else if(mEdMode==='open'){if(isMine)return;if(isOpen)mEdOpen.delete(idx);else mEdOpen.add(idx);}else{mEdMines.delete(idx);mEdOpen.delete(idx);}buildModalEd();};
+    g.appendChild(d);
+  }
+  document.getElementById('mEdCnt').textContent=`地雷: ${mEdMines.size}個　初期開放: ${mEdOpen.size}マス`;
+}
+function clearModalEd(){mEdMines=new Set();mEdOpen=new Set();buildModalEd();}
+function openEditModal(id){
+  const b=boards.find(bb=>bb.id===id);if(!b)return;
+  mEditingId=id;mEdMode='mine';
+  document.getElementById('mEdName').value=b.name;document.getElementById('mEdDiff').value=b.diff;document.getElementById('mEdDesc').value=b.desc||'';
+  document.getElementById('mEdR').value=b.rows;document.getElementById('mEdC').value=b.cols;
+  mEdMines=new Set(b.mines);mEdOpen=new Set(b.opens||[]);
+  document.querySelectorAll('#editModal .mode-btn').forEach(bb=>bb.classList.remove('active'));document.getElementById('mmode-mine').classList.add('active');
+  buildModalEd();document.getElementById('editModal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('editModal').classList.add('hidden');mEditingId=null;}
+function saveModalBoard(){
+  const nm=document.getElementById('mEdName').value.trim();if(!nm){toast('盤面名を入力してください');return;}if(mEdMines.size===0){toast('地雷を1個以上配置してください');return;}
+  const R=parseInt(document.getElementById('mEdR').value)||6,C=parseInt(document.getElementById('mEdC').value)||6;
+  const idx=boards.findIndex(b=>b.id===mEditingId);if(idx<0)return;
+  boards[idx]={...boards[idx],name:nm,diff:document.getElementById('mEdDiff').value,desc:document.getElementById('mEdDesc').value.trim(),rows:R,cols:C,mines:[...mEdMines].sort((a,b)=>a-b),opens:[...mEdOpen].sort((a,b)=>a-b)};
+  saveB();closeModal();renderAdminBoards();toast(`「${nm}」を更新しました`);
+}
+function setTrialMode(m){trEdMode=m;document.querySelectorAll('#atab-trial .mode-btn').forEach(b=>b.classList.remove('active'));document.getElementById('trmode-'+m).classList.add('active');}
+function buildTrialEd(){
+  const R=parseInt(document.getElementById('trEdR').value)||5,C=parseInt(document.getElementById('trEdC').value)||5;
+  trEdMines=new Set([...trEdMines].filter(i=>Math.floor(i/C)<R&&i%C<C));
+  trEdOpen=new Set([...trEdOpen].filter(i=>Math.floor(i/C)<R&&i%C<C&&!trEdMines.has(i)));
+  const tmpB=Array.from({length:R},(_,r)=>Array.from({length:C},(_,c)=>trEdMines.has(r*C+c)?-1:0));
+  calcNumbers(tmpB,R,C);
+  const g=document.getElementById('trEdGrid');g.style.gridTemplateColumns=`repeat(${C},28px)`;g.innerHTML='';
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const idx=r*C+c,isMine=trEdMines.has(idx),isOpen=trEdOpen.has(idx);
+    const d=document.createElement('div');d.className='ed-cell'+(isMine?' mine':isOpen?' open':'');
+    if(isMine)d.textContent='💣';else if(isOpen){const v=tmpB[r][c];d.innerHTML=v>0?`<span style="font-size:11px;font-weight:700;color:${NUM_C[v]}">${v}</span>`:'';}
+    d.onclick=()=>{if(trEdMode==='mine'){if(isOpen)return;if(isMine)trEdMines.delete(idx);else{trEdMines.add(idx);trEdOpen.delete(idx);}}else if(trEdMode==='open'){if(isMine)return;if(isOpen)trEdOpen.delete(idx);else trEdOpen.add(idx);}else{trEdMines.delete(idx);trEdOpen.delete(idx);}buildTrialEd();};
+    g.appendChild(d);
+  }
+  document.getElementById('trEdCnt').textContent=`地雷: ${trEdMines.size}個　初期開放: ${trEdOpen.size}マス`;
+}
+function clearTrialEd(){trEdMines=new Set();trEdOpen=new Set();buildTrialEd();}
+function saveTrialBoard(){
+  if(trEdMines.size===0){toast('地雷を1個以上配置してください');return;}
+  const R=parseInt(document.getElementById('trEdR').value)||5,C=parseInt(document.getElementById('trEdC').value)||5;
+  trialBoard={rows:R,cols:C,mines:[...trEdMines].sort((a,b)=>a-b),opens:[...trEdOpen].sort((a,b)=>a-b)};
+  saveTrial();renderTrialPreview();toast('お試し盤面を保存しました');
+}
+function renderTrialPreview(){
+  document.getElementById('trEdR').value=trialBoard.rows;document.getElementById('trEdC').value=trialBoard.cols;
+  trEdMines=new Set(trialBoard.mines);trEdOpen=new Set(trialBoard.opens||[]);buildTrialEd();
+  const R=trialBoard.rows,C=trialBoard.cols;
+  const brd=Array.from({length:R},(_,r)=>Array.from({length:C},(_,c)=>trialBoard.mines.includes(r*C+c)?-1:0));
+  calcNumbers(brd,R,C);
+  const rv=Array.from({length:R},()=>Array(C).fill(false));
+  const fg=Array.from({length:R},()=>Array(C).fill(false));
+  (trialBoard.opens||[]).forEach(idx=>{const r=Math.floor(idx/C),c=idx%C;if(brd[r]&&brd[r][c]!==-1)floodReveal(r,c,brd,rv,fg,R,C);});
+  drawBoardTo(document.getElementById('trPreviewWrap'),R,C,rv,fg,brd,false,'view');
+}
+function renderAdminBoards(){
+  const el=document.getElementById('adminBoardList');if(!el)return;
+  if(boards.length===0){el.innerHTML='<p style="font-size:13px;color:var(--tx3);">まだ盤面がありません。</p>';return;}
+  let h='<div class="tbl-wrap"><table><thead><tr><th>ID</th><th>名前</th><th>サイズ</th><th>地雷</th><th>難易度(管理用)</th><th>配置プレビュー</th><th></th></tr></thead><tbody>';
+  boards.forEach(b=>{
+    const dl={easy:'易しい',medium:'普通',hard:'難しい'}[b.diff]||b.diff;
+    const dc={easy:'b-easy',medium:'b-med',hard:'b-hard'}[b.diff]||'b-med';
+    const opens=b.opens||[];let mini='';
+    for(let r=0;r<b.rows;r++)for(let c=0;c<b.cols;c++){const idx=r*b.cols+c;const isMine=b.mines.includes(idx),isOpen=opens.includes(idx);mini+=`<div class="mc${isMine?' m':isOpen?' o':''}"></div>`;}
+    h+=`<tr><td>${b.id}</td><td style="font-weight:500">${x(b.name)}</td><td>${b.rows}×${b.cols}</td><td>${b.mines.length}</td><td><span class="badge ${dc}">${dl}</span></td><td><div style="display:inline-grid;grid-template-columns:repeat(${b.cols},11px);gap:1px;">${mini}</div></td><td style="white-space:nowrap"><button class="btn btn-sm" onclick="openEditModal(${b.id})" style="margin-right:4px;">編集</button><button class="btn btn-sm btn-danger" onclick="delBoard(${b.id})">削除</button></td></tr>`;
+  });
+  h+='</tbody></table></div>';el.innerHTML=h;
+}
+function delBoard(id){if(!confirm('削除しますか？'))return;boards=boards.filter(b=>b.id!==id);saveB();renderAdminBoards();toast('削除しました');}
+function renderResults(){
+  const el=document.getElementById('resultTable');
+  if(responses.length===0){el.innerHTML='<p style="font-size:13px;color:var(--tx3);">回答データがありません。</p>';return;}
+  let h='<div class="tbl-wrap"><table><thead><tr><th>ニックネーム</th><th>熟練度</th><th>盤面</th><th>サイズ</th><th>地雷</th><th>結果</th><th>時間</th><th>操作</th><th>評価</th><th>理由</th></tr></thead><tbody>';
+  responses.forEach(r=>{h+=`<tr><td style="font-weight:500">${x(r.nickname)}</td><td style="font-size:11px">${x(r.skillLabel||'')}</td><td>${x(r.boardName)}</td><td>${r.rows}×${r.cols}</td><td>${r.mines}</td><td>${r.result==='win'?'✓クリア':r.result==='lose'?'✗ミス':'—'}</td><td>${r.time}s</td><td>${r.moves}</td><td style="font-weight:700;text-align:center">${r.rating}/5</td><td style="font-size:11px;max-width:120px;">${x(r.reason||'—')}</td></tr>`;});
+  h+='</tbody></table></div>';el.innerHTML=h;
+}
+function exportCSV(){
+  const hdr='ニックネーム,熟練度,盤面ID,盤面名,行数,列数,地雷数,地雷インデックス,初期開放インデックス,結果,時間(s),操作数,評価(1-5),理由,日時\n';
+  const rows=responses.map(r=>`"${r.nickname}","${r.skillLabel||''}",${r.boardId},"${r.boardName}",${r.rows},${r.cols},${r.mines},"${r.mineIndices||''}","${r.openIndices||''}",${r.result},${r.time},${r.moves},${r.rating},"${(r.reason||'').replace(/"/g,'""')}","${r.ts}"`).join('\n');
+  const blob=new Blob(['\uFEFF'+hdr+rows],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ms_responses.csv';a.click();
+}
+function clearResults(){if(!confirm('全データを削除しますか？'))return;responses=[];saveR();renderResults();toast('削除しました');}
+function x(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+load();
+</script>
+</body>
+</html>
