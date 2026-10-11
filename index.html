@@ -93,6 +93,7 @@ tr:last-child td{border-bottom:none;}
 .pw-gate{text-align:center;padding:2rem 1rem;}
 .toast-box{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:8px 16px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast-box.show{opacity:1;}
+svg, svg *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;}
 </style>
 </head>
 <body>
@@ -727,6 +728,9 @@ function drawBoardTo(container, R, C, revArr, flgArr, boardArr, interactive, mod
   const W = C*(CELL+GAP)-GAP, H = R*(CELL+GAP)-GAP;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('width', W); svg.setAttribute('height', H); svg.style.display = 'block';
+  // スマホでの長押し時に、数字が文字として選択される(コピー/調べる/翻訳が出る)のを防ぐ
+  svg.style.userSelect = 'none'; svg.style.webkitUserSelect = 'none'; svg.style.webkitTouchCallout = 'none';
+  svg.style.touchAction = 'manipulation'; svg.style.webkitTapHighlightColor = 'transparent';
   for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
     const px = c*(CELL+GAP), py = r*(CELL+GAP);
     const isRev = revArr[r][c], isFlg = flgArr[r][c], val = boardArr[r][c];
@@ -754,25 +758,47 @@ function drawBoardTo(container, R, C, revArr, flgArr, boardArr, interactive, mod
         ov.setAttribute('width', CELL); ov.setAttribute('height', CELL);
         ov.setAttribute('rx', 3); ov.setAttribute('fill', 'transparent'); ov.style.cursor = 'pointer';
         const rr = r, cc = c;
-        if (mode === 'trial') {
-          ov.addEventListener('click', () => handleTrialCell(rr, cc));
-          ov.addEventListener('contextmenu', e => { e.preventDefault(); handleTrialFlag(rr, cc); });
-          let lt; ov.addEventListener('touchstart', () => { lt = setTimeout(() => handleTrialFlag(rr, cc), 500); }, {passive:true});
-          ov.addEventListener('touchend', () => clearTimeout(lt), {passive:true});
-        } else {
-          ov.addEventListener('click', () => handleCell(rr, cc));
-          ov.addEventListener('contextmenu', e => { e.preventDefault(); handleFlag(rr, cc); });
-          let lt; ov.addEventListener('touchstart', () => { lt = setTimeout(() => handleFlag(rr, cc), 500); }, {passive:true});
-          ov.addEventListener('touchend', () => clearTimeout(lt), {passive:true});
-        }
+        if (mode === 'trial') attachCellEvents(ov, () => handleTrialCell(rr, cc), () => handleTrialFlag(rr, cc));
+        else attachCellEvents(ov, () => handleCell(rr, cc), () => handleFlag(rr, cc));
         svg.appendChild(ov);
       }
     }
   }
   container.innerHTML = ''; container.appendChild(svg);
 }
+// マス1つ分の操作: タップ=開く / 長押し(0.5秒)=旗 / PCの右クリック=旗
+function attachCellEvents(ov, onOpen, onFlag) {
+  let timer = null, fired = false, sx = 0, sy = 0, lastTouch = 0;
+  ov.addEventListener('touchstart', e => {
+    lastTouch = Date.now(); fired = false;
+    const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fired = true;
+      try { if (navigator.vibrate) navigator.vibrate(25); } catch (_) {}
+      onFlag();
+    }, 500);
+  }, {passive:true});
+  // 指が動いた(スクロールなど)ときは長押しを取り消す
+  ov.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) clearTimeout(timer);
+  }, {passive:true});
+  ov.addEventListener('touchend', e => {
+    clearTimeout(timer); lastTouch = Date.now();
+    if (fired && e.cancelable) e.preventDefault(); // 長押しで旗を置いたあと、マスが開かないようにする
+  });
+  ov.addEventListener('touchcancel', () => clearTimeout(timer), {passive:true});
+  ov.addEventListener('click', () => { if (fired) { fired = false; return; } onOpen(); });
+  ov.addEventListener('contextmenu', e => {
+    e.preventDefault(); // 長押しメニューは出さない
+    if (Date.now() - lastTouch < 800) return; // タッチ操作由来の場合は、長押しの処理(上)で旗を扱うので二重に切り替えない
+    onFlag(); // PCの右クリック
+  });
+}
 function mkT(x, y, txt, sz, fill = '#1a1a18') {
   const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.style.pointerEvents = 'none'; t.style.userSelect = 'none'; t.style.webkitUserSelect = 'none';
   t.setAttribute('x', x); t.setAttribute('y', y); t.setAttribute('text-anchor', 'middle');
   t.setAttribute('font-size', sz); t.setAttribute('fill', fill); t.textContent = txt; return t;
 }
